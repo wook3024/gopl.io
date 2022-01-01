@@ -14,7 +14,11 @@ import (
 
 //!+
 func main() {
-	fmt.Println(strings.Join(os.Args[1:], " "))
+	var _value []string
+	for i, arg := range os.Args {
+		_value = append(_value, fmt.Sprintf("%d %s", i, arg))
+	}
+	fmt.Println(strings.Join(_value, "\n"))
 }
 
 //!-

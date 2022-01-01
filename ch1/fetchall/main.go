@@ -10,9 +10,9 @@ package main
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -36,7 +36,9 @@ func fetch(url string, ch chan<- string) {
 		return
 	}
 
-	nbytes, err := io.Copy(ioutil.Discard, resp.Body)
+	dst := fmt.Sprintf("%s_%s.txt", strings.Split(url, "://")[1], start.String())
+	copy, _ := os.Create(dst)
+	nbytes, err := io.Copy(copy, resp.Body)
 	resp.Body.Close() // don't leak resources
 	if err != nil {
 		ch <- fmt.Sprintf("while reading %s: %v", url, err)
