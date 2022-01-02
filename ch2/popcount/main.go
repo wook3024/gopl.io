@@ -40,17 +40,31 @@ func ModifiedPopCount(x uint64) int {
 	return int(sum)
 
 }
+func ShiftePopCount(x uint64) int {
+	var sum byte
+	byte_value := byte(x)
+	for i := 0; i < int(x); i++ {
+		byte_value = byte(byte_value >> i)
+		sum += byte_value & 1
+
+	}
+	return int(sum)
+}
 
 func main() {
-	var num uint64 = 25
+	var num uint64 = 91232341
 	start := time.Now()
-	fmt.Printf("PopCount result %d\n", PopCount(num))
+	result := PopCount(num)
 	elapsed := time.Since(start)
-	fmt.Printf("PopCount Elapsed time %s\n", elapsed)
+	fmt.Printf("PopCount result %d, elapsed time %s\n", result, elapsed)
 	start = time.Now()
-	fmt.Printf("ModifiedPopCount result %d\n", ModifiedPopCount(num))
+	result = ModifiedPopCount(num)
 	elapsed = time.Since(start)
-	fmt.Printf("ModifiedPopCount Elapsed time %s\n", elapsed)
+	fmt.Printf("ModifiedPopCount result %d, elapsed time %s\n", result, elapsed)
+	start = time.Now()
+	result = ShiftePopCount(num)
+	elapsed = time.Since(start)
+	fmt.Printf("ShiftePopCount result %d, elapsed time %s\n", result, elapsed)
 }
 
 //!-
