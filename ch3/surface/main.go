@@ -9,38 +9,62 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"math"
+	"net/http"
+	"strconv"
 )
-
-const (
-	width, height = 600, 320            // canvas size in pixels
-	cells         = 100                 // number of grid cells
-	xyrange       = 30.0                // axis ranges (-xyrange..+xyrange)
-	xyscale       = width / 2 / xyrange // pixels per x or y unit
-	zscale        = height * 0.4        // pixels per z unit
-	angle         = math.Pi / 6         // angle of x, y axes (=30°)
-)
-
-var sin30, cos30 = math.Sin(angle), math.Cos(angle) // sin(30°), cos(30°)
 
 func main() {
-	fmt.Printf("<svg xmlns='http://www.w3.org/2000/svg' "+
-		"style='stroke: grey; fill: white; stroke-width: 0.7' "+
-		"width='%d' height='%d'>", width, height)
-	for i := 0; i < cells; i++ {
-		for j := 0; j < cells; j++ {
-			ax, ay := corner(i+1, j)
-			bx, by := corner(i, j)
-			cx, cy := corner(i, j+1)
-			dx, dy := corner(i+1, j+1)
-			fmt.Printf("<polygon points='%g,%g %g,%g %g,%g %g,%g'/>\n",
+	http.HandleFunc("/surface", handler)
+	log.Fatal(http.ListenAndServe("localhost:8000", nil))
+}
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "image/svg+xml")
+	var width, height float64 = 600, 320 // canvas size in pixels
+	var cells float64 = 100              // number of grid cells
+	var xyrange = 30.0                   // axis ranges (-xyrange..+xyrange)
+	var xyscale = width / 2 / xyrange    // pixels per x or y unit
+	var zscale = height * 0.4            // pixels per z unit
+	var angle = math.Pi / 6              // angle of x, y axes (:=30°)
+	var strokeColor = "grey"
+
+	var sin30, cos30 = math.Sin(angle), math.Cos(angle) // sin(30°), cos(30°)
+
+	if r.FormValue("width") != "" {
+		width, _ = strconv.ParseFloat(r.FormValue("width"), 64)
+	}
+	if r.FormValue("height") != "" {
+		height, _ = strconv.ParseFloat(r.FormValue("height"), 64)
+	}
+	if r.FormValue("strokeColor") != "" {
+		strokeColor = r.FormValue("strokeColor")
+	}
+
+	fmt.Fprintf(w, "<svg xmlns='http://www.w3.org/2000/svg' "+
+		"style='stroke: %s; fill: white; stroke-width: 0.7' "+
+		"width='%f' height='%f'>", strokeColor, width, height)
+	fmt.Fprintf(w, "	<defs>"+
+		"	<linearGradient id='grad' x2='0%%' y2='100%%'>"+
+		"		<stop offset='0' stop-color='#ff0000'/>"+
+		"		<stop offset='1' stop-color='#0000ff'/>"+
+		"	</linearGradient>"+
+		"	</defs>")
+	for i := 0; i < int(cells); i++ {
+		for j := 0; j < int(cells); j++ {
+			ax, ay := corner(width, height, cos30, sin30, xyrange, xyscale, zscale, cells, i+1, j)
+			bx, by := corner(width, height, cos30, sin30, xyrange, xyscale, zscale, cells, i, j)
+			cx, cy := corner(width, height, cos30, sin30, xyrange, xyscale, zscale, cells, i, j+1)
+			dx, dy := corner(width, height, cos30, sin30, xyrange, xyscale, zscale, cells, i+1, j+1)
+			fmt.Fprintf(w, "<polygon points='%g,%g %g,%g %g,%g %g,%g' fill='url(#grad)' />\n",
 				ax, ay, bx, by, cx, cy, dx, dy)
 		}
 	}
-	fmt.Println("</svg>")
+	fmt.Fprintln(w, "</svg>")
 }
 
-func corner(i, j int) (float64, float64) {
+func corner(width float64, height float64, cos30 float64, sin30 float64, xyrange float64, xyscale float64, zscale float64, cells float64, i, j int) (float64, float64) {
 	// Find point (x,y) at corner of cell (i,j).
 	x := xyrange * (float64(i)/cells - 0.5)
 	y := xyrange * (float64(j)/cells - 0.5)
